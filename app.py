@@ -234,7 +234,7 @@ def full_analysis(price, rent, closing, loan, rate, term, vacancy,
     dscr       = noi / annual_debt if annual_debt > 0 else 0
     gross_yield= (rent * 12 / price) * 100 if price > 0 else 0
     grm        = price / (rent * 12) if rent > 0 else 0
-    noi_per_sf = noi / (price / 150) if price > 0 else 0  # rough SF estimate
+    noi_per_sf = noi / (price / 150) if price > 0 else 0
     return dict(
         payment=round(payment,2), total_payments=round(payment*term,2),
         total_interest=round(payment*term - loan,2),
@@ -252,14 +252,12 @@ def full_analysis(price, rent, closing, loan, rate, term, vacancy,
 # ══════════════════════════════════════════════════════════════
 def run_tenant_stress(tenants, base_rent, loan, rate, term, opex_pct,
                       reabsorption_months, downtime_months):
-    """Multi-tenant vacancy stress simulation month-by-month."""
     payment = monthly_payment(loan, rate, term)
     records = []
     for scenario_name, scenario_vacancies in tenants.items():
         monthly_records = []
-        for month in range(1, 61):  # 5 years
+        for month in range(1, 61):
             yr = (month - 1) // 12 + 1
-            # Apply per-tenant vacancy
             active_tenants = []
             for t in scenario_vacancies:
                 is_vacant = (month >= t['vacant_start'] and
@@ -269,7 +267,6 @@ def run_tenant_stress(tenants, base_rent, loan, rate, term, opex_pct,
                 if is_vacant:
                     active_tenants.append({'name': t['name'], 'rent': 0, 'status': 'VACANT'})
                 elif refilling:
-                    # Partial recovery during reabsorption
                     recovery_pct = (month - (t['vacant_start'] + t['vacant_months'])) / max(reabsorption_months, 1)
                     active_tenants.append({'name': t['name'], 'rent': t['rent'] * recovery_pct * 0.85, 'status': 'REFILLING'})
                 else:
@@ -295,7 +292,6 @@ def run_tenant_stress(tenants, base_rent, loan, rate, term, opex_pct,
     return pd.DataFrame(records)
 
 def breakeven_occupancy_commercial(payment, opex_pct, gross_rent):
-    """Minimum occupancy to cover debt service."""
     if gross_rent == 0: return 100
     net_per_unit = 1 - (opex_pct/100)
     return (payment / (gross_rent * net_per_unit)) * 100
@@ -371,7 +367,7 @@ with st.sidebar:
 rent_annual = total_sqft * rent_per_sf
 rent_monthly= rent_annual / 12
 opex_total  = opex_ratio + mgmt_fee
-vacancy_pct = 5.0  # base stabilized vacancy
+vacancy_pct = 5.0
 
 r  = full_analysis(price, rent_monthly, closing, loan, rate, term,
                    vacancy_pct, opex_total, tax_pct, ins_pct, asset_type)
@@ -388,7 +384,7 @@ yield_on_cost    = (noi_annual / (price + capex)) * 100 if (price + capex) > 0 e
 spread_to_cap    = yield_on_cost - r['cap_rate']
 breakeven_occ    = breakeven_occupancy_commercial(r['payment'], opex_total, rent_monthly)
 
-# IO period cash flow (no principal paydown)
+# IO period cash flow
 io_payment       = loan * (rate/1200)
 io_cf_monthly    = (noi_annual/12) - io_payment
 
@@ -396,7 +392,7 @@ io_cf_monthly    = (noi_annual/12) - io_payment
 exit_noi         = noi_annual * (1 + rent_escal/100)**hold_yrs
 exit_value_cap   = exit_noi / (exit_cap/100) if exit_cap > 0 else 0
 exit_balance     = float(am[am['Month']==min(hold_yrs*12, len(am))]['Balance'].values[-1]) if len(am) > 0 else loan
-sale_net         = exit_value_cap * 0.97  # 3% selling costs CRE
+sale_net         = exit_value_cap * 0.97
 equity_exit      = sale_net - exit_balance
 total_cf_hold    = r['annual_cf'] * hold_yrs
 total_return     = equity_exit - r['cash_required'] - capex + total_cf_hold
@@ -407,9 +403,8 @@ rent_per_tenant = rent_monthly / num_units
 tenant_list = [{'name': f'Tenant {i+1}', 'rent': rent_per_tenant, 'vacant_start': 999, 'vacant_months': 0}
                for i in range(num_units)]
 
-# Build three scenarios
 t_base = [dict(t, vacant_start=999, vacant_months=0) for t in tenant_list]
-# Scenario 1: One anchor tenant (25% of rent) leaves month 6
+
 t_s1 = [dict(t) for t in tenant_list]
 if len(t_s1) > 0:
     t_s1[0]['rent'] = rent_monthly * 0.25
@@ -418,14 +413,12 @@ if len(t_s1) > 0:
     for i in range(1, len(t_s1)):
         t_s1[i]['rent'] = rent_monthly * 0.75 / max(len(t_s1)-1, 1)
 
-# Scenario 2: 40% of tenants leave in cascade
 t_s2 = [dict(t) for t in tenant_list]
 cascade_count = max(1, int(num_units * 0.4))
 for i in range(cascade_count):
     t_s2[i]['vacant_start'] = 3 + i * 2
     t_s2[i]['vacant_months'] = reabsorption
 
-# Scenario 3: Full building vacancy
 t_s3 = [dict(t) for t in tenant_list]
 for t in t_s3:
     t['vacant_start'] = 4
@@ -610,7 +603,6 @@ with tab1:
         st.plotly_chart(fig_wf, use_container_width=True)
 
     with col2:
-        # Lease structure breakdown
         labels = ['Vacancy Loss', 'OpEx / Mgmt', 'Property Tax', 'Insurance', 'Debt Service', 'Net CF']
         values_d = [rent_monthly-eff_rent, opex_mo, tax_mo, ins_mo, r['payment'], max(cf_mo,0)]
         clrs = [C['orange'], C['blue'], C['teal'], C['gold'], C['red'], C['green']]
@@ -626,7 +618,6 @@ with tab1:
                               height=380, title_font=dict(color='#E2E8F0', size=14))
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Income statement table
     rows = [
         ('Gross Scheduled Rent (annual)', f'${rent_annual:,.0f}', f'${rent_per_sf:.2f}/SF'),
         ('Less: Vacancy ({:.0f}%)'.format(vacancy_pct), f'-${(rent_monthly-eff_rent)*12:,.0f}', f'-${(rent_per_sf*vacancy_pct/100):.2f}/SF'),
@@ -654,7 +645,6 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-title">🔴 <span>Tenant Stress Test & Vacancy Simulation</span></div>', unsafe_allow_html=True)
 
-    # Scenario summary cards
     scenario_names = list(scenarios_dict.keys())
     summary_cols = st.columns(4)
     scenario_colors = [C['green'], C['amber'], C['orange'], C['red']]
@@ -689,7 +679,6 @@ with tab2:
     col1, col2 = st.columns([3, 2])
 
     with col1:
-        # Cash flow by scenario over 5 years
         fig_stress = go.Figure()
         colors_sc  = [C['green'], C['amber'], C['orange'], C['red']]
         dash_styles= ['solid', 'dot', 'dash', 'dashdot']
@@ -700,10 +689,8 @@ with tab2:
                 name=sc_name, line=dict(color=sc_color, width=2, dash=sc_dash),
                 hovertemplate='Month %{x}<br>CF: $%{y:,.0f}<extra>' + sc_name + '</extra>'
             ))
-        # Breakeven line
         fig_stress.add_hline(y=0, line=dict(color='#5A7090', dash='dot', width=1),
                              annotation_text='Break-Even', annotation_font_color='#5A7090')
-        # Debt service line
         fig_stress.add_hline(y=-r['payment'], line=dict(color=C['red'], dash='dot', width=1),
                              annotation_text='Full Debt Service', annotation_font_color=C['red'],
                              annotation_position='bottom right')
@@ -714,7 +701,6 @@ with tab2:
         st.plotly_chart(fig_stress, use_container_width=True)
 
     with col2:
-        # Occupancy over time
         fig_occ = go.Figure()
         for sc_name, sc_color in zip(scenario_names, colors_sc):
             sc_data = stress_df[stress_df['Scenario'] == sc_name]
@@ -726,13 +712,13 @@ with tab2:
         fig_occ.add_hline(y=breakeven_occ, line=dict(color=C['amber'], dash='dash', width=1.5),
                           annotation_text=f'Breakeven {breakeven_occ:.0f}%',
                           annotation_font_color=C['amber'])
+        # ── FIX: avoid duplicate yaxis key by using update_yaxes separately ──
         fig_occ.update_layout(**PLOT_LAYOUT, title='Occupancy Rate by Scenario',
                               height=400, title_font=dict(color='#E2E8F0', size=14),
-                              yaxis_title='Occupancy %', xaxis_title='Month',
-                              yaxis=dict(**PLOT_LAYOUT['yaxis'], range=[0, 105]))
+                              yaxis_title='Occupancy %', xaxis_title='Month')
+        fig_occ.update_yaxes(range=[0, 105])
         st.plotly_chart(fig_occ, use_container_width=True)
 
-    # Cumulative shortfall chart
     st.markdown('<div class="section-title">💸 <span>Cumulative Capital Reserve Requirement</span></div>', unsafe_allow_html=True)
     fig_cum = go.Figure()
     for sc_name, sc_color in zip(scenario_names, colors_sc):
@@ -749,7 +735,6 @@ with tab2:
                           xaxis_title='Month')
     st.plotly_chart(fig_cum, use_container_width=True)
 
-    # Stress test detail table
     st.markdown("#### 📋 Stress Scenario Detail (Month-by-Month, Year 1–2)")
     stress_display = stress_df[stress_df['Month'] <= 24][
         ['Scenario','Month','Collected Rent','NOI','Cash Flow','Occupancy','Shortfall']
@@ -759,7 +744,6 @@ with tab2:
     stress_display['Occupancy'] = stress_display['Occupancy'].apply(lambda x: f"{x:.0f}%")
     st.dataframe(stress_display, use_container_width=True, hide_index=True, height=420)
 
-    # Re-leasing cost analysis
     st.markdown('<div class="section-title">🏷️ <span>Re-Leasing Cost Analysis</span></div>', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     leasing_comm     = (rent_per_tenant * 12 * leasing_cost_pct / 100)
@@ -781,7 +765,6 @@ with tab3:
     col1, col2 = st.columns(2)
 
     with col1:
-        # Cap rate sensitivity — rent vs vacancy
         vacancy_range = np.arange(0, 35, 5)
         rent_sf_range = np.arange(max(rent_per_sf*0.6, 4), rent_per_sf*1.4, rent_per_sf*0.1)
         heat_cap = []
@@ -808,7 +791,6 @@ with tab3:
         st.plotly_chart(fig_h1, use_container_width=True)
 
     with col2:
-        # DSCR sensitivity — rate vs occupancy
         rate_range2 = np.arange(5.0, 9.5, 0.5)
         occ_range   = np.arange(60, 101, 5)
         heat_dscr   = []
@@ -834,7 +816,6 @@ with tab3:
                              xaxis_title='Interest Rate', yaxis_title='Occupancy %')
         st.plotly_chart(fig_h2, use_container_width=True)
 
-    # Scenario bar comparison
     st.markdown("#### Three-Scenario Comparison")
     r_bear = full_analysis(price, rent_monthly*0.8, closing, loan*1.05 if loan < price else loan,
                            rate+1.0, term, 20, opex_total+5, tax_pct, ins_pct)
@@ -982,7 +963,6 @@ with tab5:
                               barmode='overlay')
         st.plotly_chart(fig_noi, use_container_width=True)
 
-    # Exit summary
     st.markdown(f'<div class="section-title">🏁 <span>Exit Analysis — Year {hold_yrs}</span></div>', unsafe_allow_html=True)
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Exit Value (Cap Rate)", f"${value_cap_proj[-1]/1e6:.2f}M")
@@ -998,13 +978,12 @@ with tab5:
 with tab6:
     st.markdown('<div class="section-title">🏗️ <span>Commercial Deal Scorecard</span></div>', unsafe_allow_html=True)
 
-    # CRE benchmarks per asset type
     benchmarks = {
-        "Last Mile Warehouse": {'cap_min':5.0,'cap_target':6.5,'coc_min':7,'dscr_min':1.25,'ltv_max':65,'grm_max':14,'yoc_spread':1.0},
-        "Multi-Family Apartments": {'cap_min':4.5,'cap_target':5.5,'coc_min':6,'dscr_min':1.20,'ltv_max':75,'grm_max':18,'yoc_spread':0.75},
-        "Mixed-Use": {'cap_min':5.0,'cap_target':6.0,'coc_min':7,'dscr_min':1.25,'ltv_max':70,'grm_max':15,'yoc_spread':1.0},
-        "Cold Storage": {'cap_min':5.5,'cap_target':7.0,'coc_min':8,'dscr_min':1.30,'ltv_max':60,'grm_max':13,'yoc_spread':1.5},
-        "Flex Industrial": {'cap_min':5.0,'cap_target':6.5,'coc_min':7,'dscr_min':1.25,'ltv_max':65,'grm_max':14,'yoc_spread':1.0},
+        "Last Mile Warehouse":      {'cap_min':5.0,'cap_target':6.5,'coc_min':7,'dscr_min':1.25,'ltv_max':65,'grm_max':14,'yoc_spread':1.0},
+        "Multi-Family Apartments":  {'cap_min':4.5,'cap_target':5.5,'coc_min':6,'dscr_min':1.20,'ltv_max':75,'grm_max':18,'yoc_spread':0.75},
+        "Mixed-Use":                {'cap_min':5.0,'cap_target':6.0,'coc_min':7,'dscr_min':1.25,'ltv_max':70,'grm_max':15,'yoc_spread':1.0},
+        "Cold Storage":             {'cap_min':5.5,'cap_target':7.0,'coc_min':8,'dscr_min':1.30,'ltv_max':60,'grm_max':13,'yoc_spread':1.5},
+        "Flex Industrial":          {'cap_min':5.0,'cap_target':6.5,'coc_min':7,'dscr_min':1.25,'ltv_max':65,'grm_max':14,'yoc_spread':1.0},
     }
     bm = benchmarks.get(asset_type, benchmarks["Last Mile Warehouse"])
 
@@ -1177,7 +1156,7 @@ with tab7:
                        file_name=f"{project_name.replace(' ','_')}_PropIQ_CRE.csv", mime='text/csv')
 
 # ── FOOTER ────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <div style='text-align:center;padding:40px 0 20px;color:#243045;font-size:11px;font-family:"IBM Plex Mono",monospace'>
   PropIQ Commercial · CRE Investment Analyzer · Not financial advice · {asset_type}
 </div>
