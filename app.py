@@ -59,8 +59,23 @@ html, body, [data-testid="stAppViewContainer"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    background: #22C55E !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    box-shadow: 0 0 0 2px rgba(34,197,94,0.3) !important;
 }
-[data-testid="stExpandSidebarButton"] svg { color: var(--gold) !important; }
+[data-testid="stExpandSidebarButton"] svg { color: #FFFFFF !important; }
+[data-testid="stExpandSidebarButton"]:hover {
+    background: #16A34A !important;
+}
+[data-testid="stSidebarCollapseButton"] {
+    background: #22C55E !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebarCollapseButton"] svg { color: #FFFFFF !important; }
+[data-testid="stSidebarCollapseButton"]:hover {
+    background: #16A34A !important;
+}
 .block-container { padding: 2rem 2.5rem 4rem !important; max-width: 1500px !important; }
 
 .page-title {
