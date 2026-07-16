@@ -47,6 +47,18 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 [data-testid="stSidebar"] * { color: var(--text) !important; }
 [data-testid="stHeader"] { display: none !important; }
+/* Keep the native sidebar collapse/expand arrow visible and clickable
+   even though the rest of the Streamlit header is hidden above. */
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 999999 !important;
+}
+[data-testid="collapsedControl"] svg { color: var(--gold) !important; }
 .block-container { padding: 2rem 2.5rem 4rem !important; max-width: 1500px !important; }
 
 .page-title {
