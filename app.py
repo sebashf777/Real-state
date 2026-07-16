@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 
 # ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="PropIQ Commercial — CRE Analyzer",
+    page_title="Property Analyzer Calculator",
     page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -573,7 +573,7 @@ col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
     asset_icon = {"Last Mile Warehouse": "🏭", "Multi-Family Apartments": "🏢", "Mixed-Use": "🏙️",
                   "Cold Storage": "❄️", "Flex Industrial": "🔧"}.get(asset_type, "🏗️")
-    st.markdown(f'<div class="page-title">PropIQ Commercial</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="page-title">Property Analyzer Calculator</div>', unsafe_allow_html=True)
     st.markdown(
         f'<div class="page-sub">{asset_icon} {asset_type} · {project_name} · {total_sqft:,} SF · {num_units} Tenants</div>',
         unsafe_allow_html=True)
