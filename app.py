@@ -286,19 +286,46 @@ def breakeven_occupancy_commercial(payment, opex_pct, gross_rent):
 
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR
+# SIDEBAR — with a one-way "close" toggle
 # ══════════════════════════════════════════════════════════════
+if 'menu_closed' not in st.session_state:
+    st.session_state.menu_closed = False
+
+if st.session_state.menu_closed:
+    # The input menu has been permanently closed for this session.
+    # There is intentionally no button to reopen it — only a full
+    # browser refresh (which resets session_state) brings it back.
+    with st.sidebar:
+        st.markdown("""
+        <div style='padding:60px 12px;text-align:center'>
+          <div style='font-size:34px;opacity:0.3'>🔒</div>
+          <div style='font-family:"IBM Plex Mono",monospace;font-size:11px;color:#5A7090;
+                      margin-top:14px;letter-spacing:0.5px;line-height:1.6'>
+            INPUT MENU CLOSED<br><br>
+            This cannot be reopened.<br>Refresh the page to start over.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.stop()
+
 with st.sidebar:
-    st.markdown("""
-    <div style='padding:16px 0 8px'>
-      <div style='font-family:"Syne",sans-serif;font-size:28px;font-weight:800;
-                  background:linear-gradient(135deg,#D4A843,#F0C96A);
-                  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                  letter-spacing:-1px'>PropIQ</div>
-      <div style='font-size:10px;color:#5A7090;margin-top:2px;font-family:"IBM Plex Mono",monospace;
-                  letter-spacing:1.5px;text-transform:uppercase'>Commercial · CRE Analyzer</div>
-    </div>
-    """, unsafe_allow_html=True)
+    header_col, close_col = st.columns([4, 1])
+    with header_col:
+        st.markdown("""
+        <div style='padding:16px 0 8px'>
+          <div style='font-family:"Syne",sans-serif;font-size:28px;font-weight:800;
+                      background:linear-gradient(135deg,#D4A843,#F0C96A);
+                      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                      letter-spacing:-1px'>PropIQ</div>
+          <div style='font-size:10px;color:#5A7090;margin-top:2px;font-family:"IBM Plex Mono",monospace;
+                      letter-spacing:1.5px;text-transform:uppercase'>Commercial · CRE Analyzer</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with close_col:
+        st.markdown("<div style='padding-top:22px'></div>", unsafe_allow_html=True)
+        if st.button("✕", key="close_menu_btn", help="Close this menu permanently — it cannot be reopened without refreshing the page"):
+            st.session_state.menu_closed = True
+            st.rerun()
     st.markdown("---")
 
     project_name = st.text_input("🏷️ Project Name", value="Industrial Park A1")
