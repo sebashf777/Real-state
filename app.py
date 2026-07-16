@@ -7,7 +7,7 @@ from plotly.subplots import make_subplots
 
 # ── PAGE CONFIG ───────────────────────────────────────────────
 st.set_page_config(
-    page_title="PropIQ Commercial — CRE Analyzer",
+    page_title="Real State Calculatorr",
     page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
